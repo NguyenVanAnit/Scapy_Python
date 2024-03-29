@@ -1,10 +1,21 @@
 import argparse
 import os
 import sys
+import time
 from scapy.utils import RawPcapReader
 from scapy.layers.l2 import Ether
 from scapy.layers.inet import IP, TCP
 
+# function chuyển dấu thời gian
+def print_timestamp(ts, resol):
+    # chuyển thời gian thành đơn vị giây
+    ts_sec = ts // resol
+    # phần sau dấu phẩy của giây
+    ts_sec_resol = ts % resol
+    # chuyển thời gian thành đơn vị tự định dạng
+    ts_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ts_sec))
+    # trả về 1 chuỗi string
+    return '{}.{}'.format(ts_str, ts_sec_resol)
 
 def process_pcap(file_name):
     print('Opening {}...'.format(file_name))
@@ -49,7 +60,7 @@ def process_pcap(file_name):
         # giúp truy cập và lưu trữ gói tin TCP bên trong gói IP và lưu vào biến mới là tcp_pkt
         tcp_pkt = ip_pkt[TCP]
         # so sách cổng nguồn tương tự như ip
-        if (tcp_pkt.sport != int(server_port)) and (tcp_pkt.sport != int(client_port)):
+        if (tcp_pkt.sport != int(server_port)) and (tcp_pkt.sport != int(client_port)): # sử dụng int để chuyển string sang int vì ở trên vừa tách chuỗi string
             continue
         # so sánh cổng đích tương tự như ip
         if (tcp_pkt.dport != int(server_port)) and (tcp_pkt.dport != int(client_port)):
@@ -57,7 +68,30 @@ def process_pcap(file_name):
 
         interesting_count += 1
 
+        # gói interesting đầu tiên
+        if (interesting_count == 1):
+            # sử dụng toán tử OR bitwise ( | ) để ghép 32 bit trước và sau thành 64 bit
+            # pkt_metadata chứa dấu thời gian 64 bit nhưng chia thành 2 trường 32 bit tshigh và tslow nên cần gộp lại
+            first_pkt_timestamp = (pkt_metadata.tshigh << 32 | pkt_metadata.tslow)
+            # lưu trữ độ phân giải của dấu thời gian được lấy từ pkt_metadata
+            first_pkt_timestamp_resolution = pkt_metadata.tsresol
+            # thứ tự
+            first_pkt_ordinal = count
+
+        # gói interesting cuối cùng
+        last_pkt_timestamp = (pkt_metadata.tshigh << 32 | pkt_metadata.tslow)
+        last_pkt_timestamp_resolution = pkt_metadata.tsresol
+        last_pkt_ordinal = count
+
+    # kiểm tra thử xem phép chuyển đổi thời gian hoạt động như thế nào
+    # print(first_pkt_timestamp)
+    # print(first_pkt_timestamp_resolution)
+
     print('{} contains {} packets ({} interesting packets)'.format(file_name, count, interesting_count))
+
+    print('First packet in connection: Packet #{} Time {}'.format(first_pkt_ordinal, print_timestamp(first_pkt_timestamp, first_pkt_timestamp_resolution)))
+
+    print('Last packet in connection: Packet #{} Time {}'.format(last_pkt_ordinal, print_timestamp(last_pkt_timestamp, last_pkt_timestamp_resolution)))
 
 if __name__ == '__main__':
 
