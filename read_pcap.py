@@ -17,7 +17,7 @@ def process_pcap(file_name):
     server = '152.19.134.43:80'
 
     # tách địa chỉ ip và địa chỉ port ngăn cách bởi dấu : bằng hàm split và gắn vào 2 biến _ip và _port
-    (clien_ip, client_port) = client.split(':')
+    (client_ip, client_port) = client.split(':')
     (server_ip, server_port) = server.split(':')
 
     # truy cập từng gói Ethernet, mỗi lần lặp mang dữ liệu(nội dung gói,...) và siêu dữ liệu(dấu thời gian, số gói,...)
@@ -39,8 +39,21 @@ def process_pcap(file_name):
         # truy cập trường proto trong gói IP, proto == 6 đại diện cho gói tin TCP
         if ip_pkt.proto != 6:
             continue
+        # nếu địa chỉ ip nguồn khác với server và client thì continue
+        if (ip_pkt.src != server_ip) and (ip_pkt.src != client_ip):
+            continue
+        # nếu địa chỉ ip đích khác với server và client thì continue
+        if (ip_pkt.dst != server_ip) and (ip_pkt.dst != client_ip):
+            continue
 
-        
+        # giúp truy cập và lưu trữ gói tin TCP bên trong gói IP và lưu vào biến mới là tcp_pkt
+        tcp_pkt = ip_pkt[TCP]
+        # so sách cổng nguồn tương tự như ip
+        if (tcp_pkt.sport != server_port) and (tcp_pkt.sport != client_port):
+            continue
+        # so sánh cổng đích tương tự như ip
+        if (tcp_pkt.dport != server_port) and (tcp_pkt.dprot != client_port):
+            continue
 
         interesting_count += 1
 
