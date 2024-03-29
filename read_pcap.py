@@ -49,10 +49,10 @@ def process_pcap(file_name):
         # giúp truy cập và lưu trữ gói tin TCP bên trong gói IP và lưu vào biến mới là tcp_pkt
         tcp_pkt = ip_pkt[TCP]
         # so sách cổng nguồn tương tự như ip
-        if (tcp_pkt.sport != server_port) and (tcp_pkt.sport != client_port):
+        if (tcp_pkt.sport != int(server_port)) and (tcp_pkt.sport != int(client_port)):
             continue
         # so sánh cổng đích tương tự như ip
-        if (tcp_pkt.dport != server_port) and (tcp_pkt.dprot != client_port):
+        if (tcp_pkt.dport != int(server_port)) and (tcp_pkt.dport != int(client_port)):
             continue
 
         interesting_count += 1
